@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Formulario de Recolección</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    #map {
+      height: 300px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    form {
+      max-width: 600px;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    input, select, textarea {
+      padding: 10px;
+      font-size: 1em;
+    }
+
+    button {
+      background-color: #2e7d32;
+      color: white;
+      padding: 10px;
+      border: none;
+      font-size: 1em;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Formulario de Recolección</h1>
+
+    <div id="map"></div>
+
+    <form id="recoleccionForm">
+      <input type="text" name="calle" placeholder="Calle" required />
+      <input type="text" name="manzana" placeholder="Manzana" />
+      <input type="text" name="sector" placeholder="Condominio / Sector / Número Ext." />
+      <input type="text" name="numero_interno" placeholder="Número Interno" />
+      <input type="text" name="localidad" placeholder="Localidad" />
+      <input type="text" name="colonia" placeholder="Colonia" />
+      <input type="text" name="estado" placeholder="Estado" />
+      <input type="text" name="pais" placeholder="Entidad / País" />
+      <input type="text" name="codigo_postal" placeholder="Código Postal" />
+      <input type="number" name="cantidad_kg" step="0.1" placeholder="Cantidad de tapitas (kg)" required />
+      <input type="text" name="contacto" placeholder="Número de contacto" required />
+      
+      <input type="hidden" name="lat" id="lat" />
+      <input type="hidden" name="lng" id="lng" />
+      
+      <button type="submit">Enviar</button>
+    </form>
+  </main>
+
+  <!-- Google Maps -->
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=TU_API_KEY&callback=initMap"
+    async
+    defer
+  ></script>
+
+  <!-- Supabase -->
+  <script type="module" src="./supabase.js"></script>
+
+  <!-- Script principal -->
+  <script type="module">
+    import { supabase } from './supabase.js';
+
+    let map;
+    let marker;
+
+    window.initMap = () => {
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 19.4326, lng: -99.1332 }, // Ciudad de México
+        zoom: 12,
+      });
+
+      map.addListener("click", (e) => {
+        const lat = e.latLng.lat();
+        const lng = e.latLng.lng();
+
+        document.getElementById("lat").value = lat;
+        document.getElementById("lng").value = lng;
+
+        if (marker) {
+          marker.setMap(null);
+        }
+
+        marker = new google.maps.Marker({
+          position: { lat, lng },
+          map: map,
+        });
+      });
+    };
+
+    document.getElementById("recoleccionForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const data = Object.fromEntries(new FormData(e.target).entries());
+
+      const { error } = await supabase.from("recoleccion_tapitas").insert([data]);
+
+      if (error) {
+        alert("Error al enviar los datos");
+        console.error(error);
+      } else {
+        alert("¡Datos enviados con éxito!");
+        e.target.reset();
+        if (marker) marker.setMap(null);
+      }
+    });
+  </script>
+</body>
+</html>
+    
