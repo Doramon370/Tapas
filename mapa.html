@@ -1,124 +1,197 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Formulario de Recolección</title>
   <link rel="stylesheet" href="style.css" />
   <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    #searchBox {
+      width: 100%;
+      max-width: 600px;
+      padding: 10px;
+      margin-bottom: 10px;
+      font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
     #map {
       height: 300px;
       width: 100%;
-      margin-bottom: 20px;
-    }
-
-    form {
       max-width: 600px;
-      margin: auto;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+    }
+    form {
+      width: 100%;
+      max-width: 600px;
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
-
     input, select, textarea {
       padding: 10px;
       font-size: 1em;
+      border: 1px solid #ccc;
+      border-radius: 4px;
     }
-
     button {
       background-color: #2e7d32;
       color: white;
-      padding: 10px;
+      padding: 12px;
       border: none;
+      border-radius: 4px;
       font-size: 1em;
       cursor: pointer;
+    }
+    button:hover {
+      opacity: 0.9;
     }
   </style>
 </head>
 <body>
-  <main>
-    <h1>Formulario de Recolección</h1>
+  <h1>Formulario de Recolección</h1>
 
-    <div id="map"></div>
+  <input id="searchBox" type="text" placeholder="Buscar dirección o lugar..." />
+  <div id="map"></div>
 
-    <form id="recoleccionForm">
-      <input type="text" name="calle" placeholder="Calle" required />
-      <input type="text" name="manzana" placeholder="Manzana" />
-      <input type="text" name="sector" placeholder="Condominio / Sector / Número Ext." />
-      <input type="text" name="numero_interno" placeholder="Número Interno" />
-      <input type="text" name="localidad" placeholder="Localidad" />
-      <input type="text" name="colonia" placeholder="Colonia" />
-      <input type="text" name="estado" placeholder="Estado" />
-      <input type="text" name="pais" placeholder="Entidad / País" />
-      <input type="text" name="codigo_postal" placeholder="Código Postal" />
-      <input type="number" name="cantidad_kg" step="0.1" placeholder="Cantidad de tapitas (kg)" required />
-      <input type="text" name="contacto" placeholder="Número de contacto" required />
-      
-      <input type="hidden" name="lat" id="lat" />
-      <input type="hidden" name="lng" id="lng" />
-      
-      <button type="submit">Enviar</button>
-    </form>
-  </main>
+  <form id="recoleccionForm">
+    <input type="text" name="calle" placeholder="Calle" required />
+    <input type="text" name="manzana" placeholder="Manzana" />
+    <input type="text" name="sector" placeholder="Condominio / Sector / Número Ext." />
+    <input type="text" name="numero_interno" placeholder="Número Interno" />
+    <input type="text" name="localidad" placeholder="Localidad" />
+    <input type="text" name="colonia" placeholder="Colonia" />
+    <input type="text" name="estado" placeholder="Estado" />
+    <input type="text" name="pais" placeholder="Entidad / País" />
+    <input type="text" name="codigo_postal" placeholder="Código Postal" />
 
-  <!-- Google Maps -->
-  <script
-    src="https://maps.googleapis.com/maps/api/js?key=TU_API_KEY&callback=initMap"
-    async
-    defer
-  ></script>
+    <input
+      type="number"
+      name="cantidad_kg"
+      step="0.1"
+      placeholder="Cantidad de tapitas (kg)"
+      required
+    />
+    <input type="text" name="contacto" placeholder="Número de contacto" required />
 
-  <!-- Supabase -->
-  <script type="module" src="./supabase.js"></script>
+    <input type="hidden" name="lat" id="lat" />
+    <input type="hidden" name="lng" id="lng" />
+    <button type="submit">Enviar</button>
+  </form>
 
-  <!-- Script principal -->
-  <script type="module">
-    import { supabase } from './supabase.js';
+  <!-- initMap + Autocomplete (igual que antes) -->
+  <script>
+    let map, marker, autocomplete;
 
-    let map;
-    let marker;
-
-    window.initMap = () => {
-      map = new google.maps.Map(document.getElementById("map"), {
-        center: { lat: 19.4326, lng: -99.1332 }, // Ciudad de México
+    window.initMap = function() {
+      // Inicializa el mapa
+      map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: 19.4326, lng: -99.1332 }, // CDMX
         zoom: 12,
       });
 
-      map.addListener("click", (e) => {
+      // Configura Autocomplete
+      const input = document.getElementById('searchBox');
+      autocomplete = new google.maps.places.Autocomplete(input);
+      autocomplete.bindTo('bounds', map);
+
+      autocomplete.addListener('place_changed', function() {
+        const place = autocomplete.getPlace();
+        if (!place.geometry || !place.geometry.location) {
+          alert('No se encontró la ubicación seleccionada.');
+          return;
+        }
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+
+        // Actualiza campos ocultos
+        document.getElementById('lat').value = lat;
+        document.getElementById('lng').value = lng;
+
+        // Coloca marker
+        if (marker) marker.setMap(null);
+        marker = new google.maps.Marker({
+          position: { lat, lng },
+          map: map,
+        });
+
+        // Centra y hace zoom
+        map.setCenter({ lat, lng });
+        map.setZoom(15);
+      });
+
+      // Permitir también click manual en el mapa
+      map.addListener('click', function(e) {
         const lat = e.latLng.lat();
         const lng = e.latLng.lng();
 
-        document.getElementById("lat").value = lat;
-        document.getElementById("lng").value = lng;
+        document.getElementById('lat').value = lat;
+        document.getElementById('lng').value = lng;
 
-        if (marker) {
-          marker.setMap(null);
-        }
-
+        if (marker) marker.setMap(null);
         marker = new google.maps.Marker({
           position: { lat, lng },
           map: map,
         });
       });
     };
+  </script>
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnXG0M4F1TVwUNnDL2CNKdgeXpPWOre_Y&libraries=places&callback=initMap"
+    async
+    defer
+  ></script>
 
-    document.getElementById("recoleccionForm").addEventListener("submit", async (e) => {
+  <!-- Envío al backend -->
+  <script type="module">
+    const form = document.getElementById('recoleccionForm');
+    form.addEventListener('submit', async e => {
       e.preventDefault();
 
-      const data = Object.fromEntries(new FormData(e.target).entries());
+      // 1) Recolecta valores
+      const raw = Object.fromEntries(new FormData(form).entries());
 
-      const { error } = await supabase.from("recoleccion_tapitas").insert([data]);
+      // 2) Preparo el payload:
+      const data = {
+        ...raw,
+        // parsear cantidad_kg siempre (campo requerido)
+        cantidad_kg: parseFloat(raw.cantidad_kg),
+        // lat/lng a número o null
+        lat: raw.lat  ? parseFloat(raw.lat)  : null,
+        lng: raw.lng  ? parseFloat(raw.lng)  : null,
+      };
 
-      if (error) {
-        alert("Error al enviar los datos");
-        console.error(error);
-      } else {
-        alert("¡Datos enviados con éxito!");
-        e.target.reset();
-        if (marker) marker.setMap(null);
+      try {
+        // 3) POST al backend
+        const res = await fetch('http://localhost:3000/api/recoleccion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+
+        // 4) Leer mensaje de error si no OK
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error ?? 'Error al insertar datos');
+        }
+
+        alert('¡Datos enviados con éxito!');
+        form.reset();
+        if (window.marker) window.marker.setMap(null);
+      } catch (err) {
+        console.error('Cliente:', err);
+        alert(`Hubo un error: ${err.message}`);
       }
     });
   </script>
 </body>
 </html>
-    

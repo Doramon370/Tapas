@@ -1,0 +1,33 @@
+{
+  "name": "tapas",
+  "version": "1.0.0",
+  "main": "supabase.js",  
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Doramon370/Tapas.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Doramon370/Tapas/issues"
+  },
+  
+  "homepage": "https://github.com/Doramon370/Tapas#readme",
+  "description": "",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.50.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.0.0",
+    "express": "^5.1.0",
+    "postgres": "^3.4.7"
+  },
+  "type": "module",
+  "scripts": {
+    "start": "node --dns-result-order=ipv4first server.js"
+  }
+}
